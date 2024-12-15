@@ -1,0 +1,27 @@
+ag-grid-angular {
+    width: 90%; 
+    height: 550px;
+    margin: 20px auto;
+}
+
+.ag-theme-quartz {
+    --ag-header-background-color: #caaed2;
+    --ag-header-text-color: #ffffff;
+    --ag-row-hover-color: rgba(128, 128, 128, 0.223);
+    /* --ag-odd-row-background-color: #f7f0f0; */
+    
+}
+
+button {
+    margin: 20px 75px;
+    padding: 10px;
+    background-color: #caaed2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+button:disabled {
+    background-color: #e2d6e6;
+    cursor:not-allowed;
+}

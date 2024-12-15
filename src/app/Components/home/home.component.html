@@ -1,0 +1,17 @@
+
+<div class="grid">
+    <button (click)="delete()" [disabled]="!isRowSelected">Delete</button>
+    <ag-grid-angular
+    [columnDefs]="columnDefs"
+    [rowData]="rowData"
+    [defaultColDef]="defaultColDef"
+    [pagination]="pagination"
+    [paginationPageSize]="paginationPageSize"
+    [paginationPageSizeSelector]="paginationPageSizeSelector"
+    [rowSelection]="rowSelection"
+    [class]="themeClass"
+    (gridReady)="onGridReady($event)"
+    (selectionChanged)="onSelectionChanged($event)"
+    (cellEditingStopped)="onCellEdit($event)"
+/>
+</div>

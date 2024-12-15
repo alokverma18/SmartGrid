@@ -1,5 +1,7 @@
 # See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
+Backend/.env
+
 # Compiled output
 /dist
 /tmp
@@ -21,6 +23,7 @@ yarn-error.log
 *.sublime-workspace
 
 # Visual Studio Code
+.vscode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -29,6 +32,7 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
+/.angular
 /.angular/cache
 .sass-cache/
 /connect.lock
@@ -36,6 +40,8 @@ yarn-error.log
 /libpeerconnection.log
 testem.log
 /typings
+/Backend/venv
+/Backend/__pycache__
 
 # System files
 .DS_Store
