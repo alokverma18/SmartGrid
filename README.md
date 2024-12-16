@@ -69,7 +69,7 @@ A basic full-stack application to manage data efficiently, including fetching da
 7. Access the application at [localhost](http://localhost:4200) (or as specified in your terminal)
    
 ## Snapshot📸
-![Home page](snapshot.png)
+![Home page](Snapshot.png)
 
 ## Contributions 🤝
 All contributions are welcome! If you spot any issues, have suggestions, or want to add features, feel free to create a PR. Thanks for contributing to this project! 🚀
