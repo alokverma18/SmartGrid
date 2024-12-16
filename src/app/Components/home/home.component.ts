@@ -88,7 +88,7 @@ export class HomeComponent {
 
   public rowSelection: RowSelectionOptions | "single" | "multiple" = {
     mode: "multiRow",
-    headerCheckbox: false,
+    headerCheckbox: true,
   };
 
   public isRowSelected: boolean = false;
