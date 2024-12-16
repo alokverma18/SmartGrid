@@ -14,19 +14,19 @@ export class DataService {
   constructor() {}
 
   getData(): Observable<any> {
-    return this.http.get(`${this.apiUrl}`);
+    return this.http.get(`${this.apiUrl}`, { observe: 'response' });
   }
 
   postData(data: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/create`, data);
+    return this.http.post(`${this.apiUrl}/create`, data, { observe: 'response' });
   }
 
   deleteData(id: Number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/delete/${id}`);
+    return this.http.delete(`${this.apiUrl}/delete/${id}`, { observe: 'response' });
   }
   
   updateData(id: Number, data: FormData): Observable<any> {
-    return this.http.put(`${this.apiUrl}/update`, data);
+    return this.http.put(`${this.apiUrl}/update`, data, { observe: 'response' });
  }
 
 }

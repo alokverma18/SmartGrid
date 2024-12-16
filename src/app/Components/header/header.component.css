@@ -3,6 +3,7 @@
     background-color: #ff6400; /* Navbar background color */
     padding: 15px 20px; /* Spacing around the navbar */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+    min-width: 350px;
   }
   
   /* Navbar Container */
@@ -14,10 +15,12 @@
   
   /* Brand Styling */
   .navbar-brand {
-    font-size: 24px; /* Brand font size */
-    color: white; /* Brand text color */
-    text-decoration: none; /* Remove underline from link */
-    font-weight: bold; /* Make brand text bold */
+    font-family: 'Sacramento', cursive;
+    font-weight: bold;
+    font-size: 2.5rem;
+    color: white; 
+    text-decoration: none; 
+    
   }
   
   /* Button Group Styling */

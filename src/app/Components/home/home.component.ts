@@ -63,11 +63,24 @@ export class HomeComponent {
   private gridApi!: GridApi;
 
   onGridReady(params: GridReadyEvent<EmployeeData>) {
-    this.dataService.getData().subscribe((data) => {
-      (this.rowData = data);
-      this.gridApi = params.api;
-      // console.log(this.rowData);
+    this.dataService.getData().subscribe({
+      next: (response) => {
+        if (response.status === 200) {
+          this.rowData = response.body;
+        }
+      },
+      error: (error) => {
+        console.error('Error:', error);
+        this.snackBar.open(
+          'Failed to load data', 
+          'Try again!', {
+          duration: 2000,
+          verticalPosition: 'top', 
+          horizontalPosition: 'center',
+          });
+      },
     });
+      this.gridApi = params.api;
   }
   public pagination = true;
   public paginationPageSize = 10;
@@ -91,34 +104,85 @@ export class HomeComponent {
     if(event.oldValue !== event.newValue) {
       console.log("Cell Edited");
       console.log(event.data.id, event.data);
-      this.dataService.updateData(event.data.id, event.data).subscribe((data) => {
-        console.log(data);
-      });
-      this.snackBar.open(
-        'Data Updated Successfully', 
-        'Done', {
-        duration: 2000,
-        verticalPosition: 'top', // Allowed values are  'top' | 'bottom'
-        horizontalPosition: 'center', // Allowed values are 'start' | 'center' | 'end' | 'left' | 'right'
+      this.dataService.updateData(event.data.id, event.data).subscribe({
+        next: (response) => {
+          if (response.status === 200) {
+            console.log(response.body);
+            this.snackBar.open(
+              'Data Updated Successfully', 
+              'Done!', {
+              duration: 2000,
+              verticalPosition: 'top', // Allowed values are  'top' | 'bottom'
+              horizontalPosition: 'center', // Allowed values are 'start' | 'center' | 'end' | 'left' | 'right'
+            });
+          }
+        },
+        error: (error) => {
+          console.error('Error:', error);
+          this.snackBar.open(
+            'Failed to Update the data', 
+            'Try again!', {
+            duration: 2000,
+            verticalPosition: 'top', 
+            horizontalPosition: 'center',
+          });
+        },
       });
     }
   }
 
   delete() {
-    console.log("Delete Button Clicked");
     const selectedData = this.gridApi.getSelectedRows();
   
-    selectedData.forEach((data) => {
-      this.dataService.deleteData(data.id).subscribe(
-        (response) => {
-          console.log(response);
-          // Refresh the grid data after deletion
+    let successCount = 0;
+    let failureCount = 0;
+
+    const deletionRequests = selectedData.map((data) =>
+      this.dataService.deleteData(data.id).toPromise().then(
+        () => {
+          successCount++;
+          // Remove the data from the grid on successful deletion
           this.gridApi.applyTransaction({ remove: [data] });
         },
-        (error) => {
-          console.error("Error deleting data:", error);
+        () => {
+          failureCount++;
         }
-      );
+      )
+    );
+
+    // Wait for all deletion requests to complete
+    Promise.all(deletionRequests).then(() => {
+      if (failureCount === 0) {
+        this.snackBar.open(
+          `${successCount} rows deleted successfully!`,
+          'OK',
+          {
+            duration: 2000,
+            verticalPosition: 'top',
+            horizontalPosition: 'center',
+          }
+        );
+      } else if (successCount === 0) {
+        this.snackBar.open(
+          'Failed to delete all rows!',
+          'Try again!',
+          {
+            duration: 2000,
+            verticalPosition: 'top',
+            horizontalPosition: 'center',
+          }
+        );
+      } else {
+        this.snackBar.open(
+          `Deleted ${successCount} rows successfully. Failed to delete ${failureCount} rows.`,
+          'Review',
+          {
+            duration: 3000,
+            verticalPosition: 'top',
+            horizontalPosition: 'center',
+          }
+        );
+      }
     });
   }
   
