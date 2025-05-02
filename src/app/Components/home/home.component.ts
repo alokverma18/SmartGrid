@@ -15,6 +15,7 @@ import {
 } from "ag-grid-community";
 import { DataService } from "./data.service";
 import { CommonModule } from "@angular/common";
+import { ExportService } from "./export.service";
 
 interface EmployeeData {
   id : Number, 
@@ -36,13 +37,14 @@ interface EmployeeData {
 export class HomeComponent {
 
   public columnDefs: ColDef[] = [
-    { field: "id", editable: false},
-    { field: "name" },
-    { field: "email" },
-    { field: "phone" },
-    { field: "address" },
-    { field: "salary" },
+    { field: "id", headerName: "ID", editable: false },
+    { field: "name", headerName: "Name" },
+    { field: "email", headerName: "Email" },
+    { field: "phone", headerName: "Phone" },
+    { field: "address", headerName: "Address" },
+    { field: "salary", headerName: "Salary" },
   ];
+  
   public defaultColDef: ColDef = {
     editable: true,
     filter: true,
@@ -57,6 +59,7 @@ export class HomeComponent {
 
   constructor(
     private dataService : DataService,
+    private exportService: ExportService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -185,5 +188,33 @@ export class HomeComponent {
       }
     });
   }
+
+  // export() {
+  //   console.log("Exporting data to CSV...");
+  //   this.gridApi.exportDataAsCsv({
+  //     fileName: 'EmployeeData.csv',
+  //     columnKeys: ['id', 'name', 'email', 'phone', 'address', 'salary'],
+  //     processCellCallback: (params) => {
+  //       if (params.column.getColId() === "salary") {
+  //         return params.value.toLocaleString("en-US", {
+  //           style: "currency",
+  //           currency: "USD",
+  //         });
+  //       }
+  //       return params.value;
+  //     },
+  //   });
+  // }
   
+  export() {
+    console.log("Exporting data to PowerPoint...");
+    this.exportService.generatePowerPoint(this.gridApi);
+    this.snackBar.open(
+      'Data Exported Successfully', 
+      'Done!', {
+      duration: 2000,
+      verticalPosition: 'top', // Allowed values are  'top' | 'bottom'
+      horizontalPosition: 'center', // Allowed values are 'start' | 'center' | 'end' | 'left' | 'right'
+    });
+  }
 }

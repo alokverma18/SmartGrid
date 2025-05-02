@@ -1,7 +1,8 @@
-
-<div class="grid">
+<div class="button-container">
     <button (click)="delete()" [disabled]="!isRowSelected">Delete</button>
-    <ag-grid-angular
+    <button (click)="export()">Export</button>
+</div>
+<ag-grid-angular
     [columnDefs]="columnDefs"
     [rowData]="rowData"
     [defaultColDef]="defaultColDef"
@@ -14,4 +15,3 @@
     (selectionChanged)="onSelectionChanged($event)"
     (cellEditingStopped)="onCellEdit($event)"
 />
-</div>

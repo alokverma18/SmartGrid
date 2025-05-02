@@ -11,9 +11,11 @@ ag-grid-angular {
     /* --ag-odd-row-background-color: #f7f0f0; */
     
 }
-
+.button-container {
+    margin: 20px 0px 0px 60px;
+}
 button {
-    margin: 20px 75px 0px;
+    margin-left: 20px;
     padding: 10px;
     background-color: #caaed2;
     color: white;
