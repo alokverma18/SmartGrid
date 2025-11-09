@@ -171,3 +171,4 @@ def showMessage(error=None):
     return response
 
 if __name__ == "__main__":
+    app.run()
