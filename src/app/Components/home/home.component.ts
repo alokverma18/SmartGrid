@@ -1,9 +1,6 @@
 import { Component } from "@angular/core";
 import { AgGridAngular } from "ag-grid-angular";
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-quartz.css";
-import "ag-grid-community/styles/ag-theme-alpine.css";
-import {MatSnackBar} from '@angular/material/snack-bar'; 
+import {MatSnackBar} from '@angular/material/snack-bar';
 import {
   ColDef,
   ColGroupDef,
@@ -18,11 +15,11 @@ import { CommonModule } from "@angular/common";
 import { ExportService } from "./export.service";
 
 interface EmployeeData {
-  id : Number, 
-  name: String, 
-  email: String, 
-  phone: Number, 
-  address: String, 
+  id : Number,
+  name: String,
+  email: String,
+  phone: Number,
+  address: String,
   salary: Number
 }
 
@@ -44,7 +41,7 @@ export class HomeComponent {
     { field: "address", headerName: "Address" },
     { field: "salary", headerName: "Salary" },
   ];
-  
+
   public defaultColDef: ColDef = {
     editable: true,
     filter: true,
@@ -75,10 +72,10 @@ export class HomeComponent {
       error: (error) => {
         console.error('Error:', error);
         this.snackBar.open(
-          'Failed to load data', 
+          'Failed to load data',
           'Try again!', {
           duration: 2000,
-          verticalPosition: 'top', 
+          verticalPosition: 'top',
           horizontalPosition: 'center',
           });
       },
@@ -112,7 +109,7 @@ export class HomeComponent {
           if (response.status === 200) {
             console.log(response.body);
             this.snackBar.open(
-              'Data Updated Successfully', 
+              'Data Updated Successfully',
               'Done!', {
               duration: 2000,
               verticalPosition: 'top', // Allowed values are  'top' | 'bottom'
@@ -123,10 +120,10 @@ export class HomeComponent {
         error: (error) => {
           console.error('Error:', error);
           this.snackBar.open(
-            'Failed to Update the data', 
+            'Failed to Update the data',
             'Try again!', {
             duration: 2000,
-            verticalPosition: 'top', 
+            verticalPosition: 'top',
             horizontalPosition: 'center',
           });
         },
@@ -136,7 +133,7 @@ export class HomeComponent {
 
   delete() {
     const selectedData = this.gridApi.getSelectedRows();
-  
+
     let successCount = 0;
     let failureCount = 0;
 
@@ -205,12 +202,12 @@ export class HomeComponent {
   //     },
   //   });
   // }
-  
+
   export() {
     console.log("Exporting data to PowerPoint...");
     this.exportService.generatePowerPoint(this.gridApi);
     this.snackBar.open(
-      'Data Exported Successfully', 
+      'Data Exported Successfully',
       'Done!', {
       duration: 2000,
       verticalPosition: 'top', // Allowed values are  'top' | 'bottom'
