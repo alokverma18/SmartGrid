@@ -1,14 +1,14 @@
-from config import mysql
-import pymysql
+from config import employees_collection
+from json_encoder import serialize_documents
 
 def check():
     try:
-        conn = mysql.connect()
-        print(conn)
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("select * from employee")
-        vehicleRow = cursor.fetchall()
-        print(vehicleRow)
+        # Fetch all employees from MongoDB
+        employees = list(employees_collection.find())
+        serialized = serialize_documents(employees)
+        print(serialized)
     except Exception as err:
         print(err)
-check()
+
+if __name__ == "__main__":
+    check()

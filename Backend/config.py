@@ -1,13 +1,15 @@
 from app import app
-from flaskext.mysql import MySQL
+from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-mysql = MySQL()
-app.config['MYSQL_DATABASE_USER'] = os.getenv('MYSQL_DATABASE_USER')
-app.config['MYSQL_DATABASE_PASSWORD'] = os.getenv('MYSQL_DATABASE_PASSWORD')
-app.config['MYSQL_DATABASE_DB'] = os.getenv('MYSQL_DATABASE_DB')
-app.config['MYSQL_DATABASE_HOST'] = os.getenv('MYSQL_DATABASE_HOST')
-mysql.init_app(app)
+# MongoDB Connection
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/smartgrid')
+client = MongoClient(MONGODB_URI)
+db = client['smartgrid']
+employees_collection = db['employees']
+
+# Create indexes for better performance
+employees_collection.create_index('email', unique=True)

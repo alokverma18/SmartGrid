@@ -24,7 +24,7 @@ export class DataService {
   deleteData(id: Number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/delete/${id}`, { observe: 'response' });
   }
-  
+
   updateData(id: Number, data: FormData): Observable<any> {
     return this.http.put(`${this.apiUrl}/update`, data, { observe: 'response' });
  }

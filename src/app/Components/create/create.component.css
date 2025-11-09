@@ -49,6 +49,25 @@ input:focus {
   box-shadow: 0 0 4px rgb(255, 100, 0, 0.5);
 }
 
+/* Error Message Styling */
+.error-message {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.error-message span {
+  display: block;
+}
+
+input.ng-invalid.ng-touched {
+  border-color: #d32f2f;
+  background-color: #ffebee;
+}
+
 /* Form Actions */
 .form-actions {
   grid-column: span 2;
@@ -78,7 +97,7 @@ button:disabled {
   background-color: rgb(255, 100, 0, 0.5);;
   cursor: not-allowed;
 }
- 
+
 
 /* Responsive Design */
 @media only screen and (max-width: 768px) {
@@ -88,12 +107,12 @@ button:disabled {
     min-width: 350px;
   }
    .form-grid {
-    grid-template-columns: 1fr; 
+    grid-template-columns: 1fr;
   }
 
   .container .form-actions {
     grid-column: span 1; /* Span 1 column */
-    
+
   }
-  
+
 }

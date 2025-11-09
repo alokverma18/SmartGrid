@@ -2,303 +2,518 @@
 
 ## Project Overview
 
-SmartGrid is a full-stack web application designed for efficient data management. It demonstrates the integration of a modern Angular frontend with a lightweight Flask backend, utilizing MySQL for data persistence. The application provides CRUD (Create, Read, Update, Delete) operations for employee records and data export capabilities.
+SmartGrid is a full-stack employee management application that demonstrates modern web development practices. It combines Angular 17 frontend with Flask backend and MongoDB database to provide a complete CRUD solution for managing employee records.
 
-This project serves as an excellent learning resource for developers interested in:
-- Building full-stack applications with Angular and Flask
-- Implementing data grids with AG-Grid
-- Integrating frontend and backend APIs
-- Working with MySQL databases in Python
+The application showcases:
+- Reactive programming with RxJS and Angular
+- RESTful API design with Flask
+- NoSQL database management with MongoDB
+- Professional data visualization with AG-Grid
+- Enterprise-grade report generation
+- Production-ready deployment patterns
 
 ## Technology Stack
 
 ### Frontend
-- **Angular 17**: A powerful framework for building scalable web applications
-- **AG-Grid**: Advanced data grid component for displaying and manipulating tabular data
-- **Angular Material**: UI component library for consistent design
-- **RxJS**: Reactive programming library for handling asynchronous operations
+- **Angular 17** - Latest Angular framework
+- **AG-Grid** - Professional data grid with sorting, filtering, pagination
+- **Angular Material** - Material Design components
+- **TypeScript** - Type-safe development
+- **RxJS** - Reactive programming for async operations
+- **PptxGenJS** - PowerPoint report generation
 
 ### Backend
-- **Flask**: Lightweight WSGI web application framework
-- **Flask-CORS**: Extension for handling Cross-Origin Resource Sharing
-- **Flask-MySQL**: Extension for MySQL database integration
-- **PyMySQL**: Pure Python MySQL client library
-- **python-dotenv**: Library for loading environment variables
+- **Python 3.8+** - Programming language
+- **Flask** - Lightweight WSGI framework
+- **PyMongo** - MongoDB driver
+- **python-dotenv** - Environment configuration
 
 ### Database
-- **MySQL**: Relational database management system
+- **MongoDB** - Document-oriented NoSQL database
+- **MongoDB Atlas** - Cloud hosting with free tier
 
-## Project Structure
+## Architecture Overview
+
+### Data Flow
 
 ```
-SmartGrid/
-├── Backend/
-│   ├── app.py              # Flask application initialization
-│   ├── config.py           # Database configuration
-│   ├── main.py             # API routes and business logic
-│   ├── check.py            # Additional utility functions
-│   ├── requirements.txt    # Python dependencies
-│   └── __pycache__/        # Compiled Python files
-├── src/
-│   ├── app/
-│   │   ├── app.component.* # Root component
-│   │   ├── app.config.ts   # Application configuration
-│   │   ├── app.routes.ts   # Routing configuration
-│   │   └── Components/
-│   │       ├── auth/       # Authentication components
-│   │       │   ├── auth.guard.ts      # Route guard
-│   │       │   ├── auth.interceptor.ts # HTTP interceptor
-│   │       │   ├── auth.service.ts    # Authentication service
-│   │       │   ├── login/             # Login component
-│   │       │   └── register/          # Registration component
-│   │       ├── create/    # Create new record component
-│   │       ├── header/    # Application header
-│   │       └── home/      # Main dashboard component
-│   │           ├── data.service.ts    # Data management service
-│   │           └── export.service.ts  # Data export service
-│   └── assets/            # Static assets
-├── angular.json           # Angular CLI configuration
-├── package.json           # Node.js dependencies and scripts
-├── tsconfig.*             # TypeScript configuration
-└── README.md              # Project documentation
+User Interface (Angular)
+        ↓
+   HTTP Requests (JSON)
+        ↓
+   Flask REST API
+        ↓
+   Input Validation & Sanitization
+        ↓
+   MongoDB Operations
+        ↓
+   JSON Response with Serialized Data
+        ↓
+   Angular Components & Templates
 ```
+
+### Component Structure
+
+**Frontend Components:**
+- `app.component` - Root component
+- `home.component` - Main dashboard with AG-Grid
+- `create.component` - Employee creation form
+- `header.component` - Navigation header
+
+**Services:**
+- `data.service.ts` - HTTP communication with backend
+- `export.service.ts` - PowerPoint report generation
+
+**Backend Routes:**
+- `POST /employee/create` - Create employee
+- `GET /employee` - List all employees
+- `GET /employee/<id>` - Get single employee
+- `PUT /employee/update` - Update employee
+- `DELETE /employee/delete/<id>` - Delete employee
 
 ## Backend Architecture
 
-### Flask Application Setup (`app.py`)
+### Flask Application (`app.py`)
+Initializes Flask with CORS support for frontend communication.
+
 ```python
 from flask import Flask
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 ```
-- Initializes the Flask application
-- Enables Cross-Origin Resource Sharing for frontend-backend communication
 
-### Database Configuration (`config.py`)
+### MongoDB Configuration (`config.py`)
+
+Connects to MongoDB Atlas and initializes the employees collection with email uniqueness index.
+
 ```python
-from app import app
-from flaskext.mysql import MySQL
+from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-mysql = MySQL()
-app.config['MYSQL_DATABASE_USER'] = os.getenv('MYSQL_DATABASE_USER')
-app.config['MYSQL_DATABASE_PASSWORD'] = os.getenv('MYSQL_DATABASE_PASSWORD')
-app.config['MYSQL_DATABASE_DB'] = os.getenv('MYSQL_DATABASE_DB')
-app.config['MYSQL_DATABASE_HOST'] = os.getenv('MYSQL_DATABASE_HOST')
-mysql.init_app(app)
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/smartgrid')
+client = MongoClient(MONGODB_URI)
+db = client['smartgrid']
+employees_collection = db['employees']
+
+# Create indexes for better performance
+employees_collection.create_index('email', unique=True)
 ```
-- Loads environment variables from `.env` file
-- Configures MySQL connection parameters
-- Initializes MySQL extension with the Flask app
+- Loads MongoDB connection string from environment variables
+- Establishes connection to MongoDB database
+- Creates indexes on frequently queried fields (email is unique)
+
+### Input Validation (`validators.py`)
+
+Comprehensive validation layer preventing security vulnerabilities:
+
+| Field | Rules | Purpose |
+|-------|-------|---------|
+| **name** | 2-100 chars, letters/spaces/hyphens/apostrophes | Prevent injection attacks |
+| **email** | RFC-compliant, 120 char max, unique | Valid format and prevent duplicates |
+| **phone** | 7-20 chars, digits/spaces/+/-/(/) | Standard phone formats |
+| **address** | 5-500 chars, alphanumeric with punctuation | Reasonable data sizes |
+| **salary** | Numeric, $0-$10,000,000 range | Prevent type coercion |
+
+**Validation Process:**
+1. Type checking - Ensure correct data types
+2. Format validation - Regex patterns for strings
+3. Range validation - Min/max values for numbers
+4. Uniqueness checks - Email doesn't exist
+5. Sanitization - Remove dangerous characters
 
 ### API Routes (`main.py`)
 
-The backend provides RESTful API endpoints for employee management:
+#### 1. Create Employee
+```python
+@app.route('/employee/create', methods=['POST'])
+```
+- Validates input data
+- Checks for duplicate email
+- Inserts into MongoDB
+- Returns 200 or 400/409
 
-#### GET /employee
-Retrieves all employee records from the database.
+#### 2. Get All Employees
+```python
+@app.route('/employee')
+```
+- Fetches all documents
+- Serializes ObjectIds to strings
+- Returns array of employees
 
-#### GET /employee/<id>
-Fetches a specific employee by ID.
+#### 3. Get Employee by ID
+```python
+@app.route('/employee/<employee_id>')
+```
+- Validates ObjectId format
+- Returns single employee or 404
 
-#### POST /employee/create
-Creates a new employee record. Expects JSON payload with:
-- name
-- email
-- phone
-- address
-- salary
+#### 4. Update Employee
+```python
+@app.route('/employee/update', methods=['PUT'])
+```
+- Validates ObjectId and data
+- Prevents email duplicates
+- Updates matching document
 
-#### PUT /employee/update
-Updates an existing employee record. Expects JSON payload with:
-- id
-- name
-- email
-- phone
-- address
-- salary
+#### 5. Delete Employee
+```python
+@app.route('/employee/delete/<employee_id>', methods=['DELETE'])
+```
+- Validates ObjectId
+- Deletes document
+- Returns 200 or 404
 
-#### DELETE /employee/delete/<id>
-Deletes an employee record by ID.
+### ObjectId Serialization (`json_encoder.py`)
+
+MongoDB uses ObjectId for primary keys, which aren't JSON-serializable. The serialization utility converts them to strings:
+
+```python
+def serialize_document(doc):
+    if isinstance(doc, dict):
+        result = {}
+        for key, value in doc.items():
+            if key == '_id' and isinstance(value, ObjectId):
+                result['id'] = str(value)  # Convert _id to id string
+            else:
+                result[key] = value
+        return result
+    return doc
+```
+
+This allows seamless communication between MongoDB and JSON APIs.
+
+## MongoDB Database Design
+
+### Collection: employees
+
+**Document Structure:**
+```json
+{
+  "_id": ObjectId("507f1f77bcf86cd799439011"),
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "1234567890",
+  "address": "123 Main St, City, State 12345",
+  "salary": 55000
+}
+```
+
+**Schema Flexibility:**
+MongoDB's schema-less nature allows:
+- Adding new fields without migrations
+- Storing different data types
+- Evolving schema over time
+- Easy horizontal scaling
+
+**Indexes:**
+- `email` - Unique index prevents duplicate emails
+- Improves query performance
+- Automatic by MongoDB
+
+### Why MongoDB?
+
+1. **Cloud-Native** - MongoDB Atlas free tier
+2. **Flexible Schema** - No migrations needed
+3. **JSON Documents** - Natural fit for JavaScript
+4. **Scalability** - Easy horizontal scaling
+5. **Developer-Friendly** - Intuitive query syntax
 
 ## Frontend Architecture
 
-### Angular Application Structure
+### Home Component (`home.component.ts`)
 
-#### App Configuration (`app.config.ts`)
+Displays employee data in interactive AG-Grid with:
+- Real-time inline editing
+- Multi-row selection and deletion
+- Sorting and filtering
+- Pagination (10 rows per page)
+- PowerPoint export
+- Error handling with Material Snackbar
+
+**Key Features:**
 ```typescript
-import { ApplicationConfig } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { routes } from './app.routes';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+// Load data on component init
+onGridReady(params) {
+  this.dataService.getData().subscribe(...)
+}
 
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideRouter(routes),
-    provideHttpClient(withInterceptorsFromDi())
-  ]
-};
+// Handle inline edits
+onCellEdit(event) {
+  this.dataService.updateData(event.data.id, event.data)
+}
+
+// Batch delete selected rows
+delete() {
+  const selectedRows = this.gridApi.getSelectedRows()
+  // Delete each row
+}
 ```
-- Configures the application with routing and HTTP client
-- Uses dependency injection for HTTP interceptors
 
-#### Routing (`app.routes.ts`)
-Defines the application's navigation structure, including protected routes.
+### Create Component (`create.component.ts`)
 
-#### Data Management
-- **DataService**: Manages CRUD operations for employee data
-- **ExportService**: Handles data export functionality (likely to PowerPoint)
+Reactive form with validation matching backend constraints:
 
-#### Components
-- **Login/Register**: User authentication interface
-- **Home**: Main dashboard with AG-Grid for data display
-- **Create**: Form for adding new employee records
-- **Header**: Navigation and user interface elements
+```typescript
+form = this.fb.group({
+  name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+  email: ['', [Validators.required, Validators.email, Validators.maxLength(120)]],
+  phone: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(20)]],
+  address: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(500)]],
+  salary: ['', [Validators.required, Validators.min(0), Validators.max(10000000)]]
+});
+```
 
-## Key Concepts and Learnings
+**Validation:**
+- Real-time validation as user types
+- Error messages show specific validation rules
+- Submit button disabled until form is valid
+- Server-side validation as backup
 
-### 1. Full-Stack Development
-- Separation of concerns between frontend and backend
-- RESTful API design principles
-- CORS handling for cross-origin requests
+### Data Service (`data.service.ts`)
 
-### 2. Angular Best Practices
-- Component-based architecture
-- Service layer for business logic
-- Reactive forms for data input
-- Route guards for authentication
-- HTTP interceptors for request/response handling
+HTTP service communicating with Flask backend:
 
-### 3. Flask Backend Development
-- REST API implementation
-- Database integration with MySQL
-- Error handling and response formatting
+```typescript
+@Injectable({ providedIn: 'root' })
+export class DataService {
+  private apiUrl = 'http://127.0.0.1:5000/employee';
+  
+  getData(): Observable<any> {
+    return this.http.get(`${this.apiUrl}`);
+  }
+  
+  postData(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/create`, data);
+  }
+  
+  updateData(id: Number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/update`, data);
+  }
+  
+  deleteData(id: Number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/delete/${id}`);
+  }
+}
+```
+
+Handles all HTTP communication with automatic JSON serialization.
+
+### Export Service (`export.service.ts`)
+
+Generates professional PowerPoint reports with:
+
+**Structure:**
+1. **Title Slide** - Orange header with project name
+2. **Data Slides** - 8 employees per slide
+3. **Summary Slide** - Statistics and insights
+
+**Features:**
+- Color-coded salary highlighting (>$75k highlighted)
+- Alternating row colors for readability
+- Column-specific formatting (bold names, blue emails)
+- Summary statistics (total, average, min, max salary)
+- Page numbers and timestamps
+- Professional typography
+
+**Design:**
+- Orange (#FF6400) branding matching UI
+- Calibri font for consistency
+- 9-inch table width for proper slide fit
+- Equal column distribution
+
+## Deployment Architecture
+
+### Vercel (Frontend)
+
+**Advantages:**
+- Zero-configuration for Angular
+- Automatic deployment on Git push
+- Global CDN for fast content delivery
+- Serverless functions support
+- Free tier unlimited projects
+- Instant rollbacks
+
+**Deployment Steps:**
+1. Connect GitHub repository
+2. Select Angular framework preset
+3. Set environment variables (API URL)
+4. Deploy automatically on every push
+
+**Result:** Frontend accessible at `yourproject.vercel.app`
+
+### Render (Backend)
+
+**Advantages:**
+- Native Python support
+- Auto-deploys from Git
+- Automatic SSL/TLS certificates
+- Health checks and monitoring
 - Environment variable management
+- Free tier available
 
-### 4. Data Grid Implementation
-- AG-Grid integration with Angular
-- Dynamic data binding
-- Sorting, filtering, and pagination
-- CRUD operations within the grid
+**Deployment Steps:**
+1. Create `Backend/Procfile` for startup command
+2. Connect GitHub repository to Render
+3. Configure build and start commands
+4. Set environment variables (MongoDB URI)
+5. Auto-deploy on Git push
 
-### 5. Database Design
-- Relational data modeling
-- SQL query optimization
-- Connection pooling
+**Configuration:**
+```
+Build Command: pip install -r Backend/requirements.txt
+Start Command: gunicorn app:app --chdir Backend
+```
 
-## Setup and Installation
+**Result:** Backend accessible at `yourproject.onrender.com`
 
-### Prerequisites
-- Node.js (v16 or higher)
-- Python (v3.9 or higher)
-- MySQL Server
-- Angular CLI
+### MongoDB Atlas (Database)
 
-### Backend Setup
-1. Navigate to the Backend directory
-2. Install Python dependencies:
+**Cloud Database Setup:**
+1. Create free M0 cluster
+2. Set database user and password
+3. Configure IP whitelist (0.0.0.0/0 for production)
+4. Get connection string
+
+**Benefits:**
+- No database server maintenance
+- Automatic backups
+- Vertical and horizontal scaling
+- Security features built-in
+- Free tier suitable for development
+
+## Input Validation & Security
+
+### Frontend Validation (`create.component.html`)
+
+Real-time error messages guide users:
+
+```html
+<div class="error-message" *ngIf="form.get('salary')?.invalid && form.get('salary')?.touched">
+  <span *ngIf="form.get('salary')?.errors?.['max']">
+    Salary cannot exceed $10,000,000
+  </span>
+</div>
+```
+
+### Backend Validation (`validators.py`)
+
+Comprehensive protection against:
+- **NoSQL Injection** - Whitelist validation prevents operators
+- **Type Coercion** - Explicit type checking
+- **DoS Attacks** - Field length limits
+- **Data Overflow** - Range validation for numbers
+- **Information Leakage** - Generic error messages
+
+### Security Best Practices
+
+1. **Whitelist Validation** - Only allow known-good inputs
+2. **Type Safety** - Explicit type checking
+3. **Error Handling** - Generic responses prevent information leakage
+4. **CORS Protection** - Restrict cross-origin requests
+5. **Data Sanitization** - Remove dangerous characters
+
+See `Backend/SECURITY.md` for detailed security documentation.
+
+## Sample Data Seeding
+
+The `seed_data.py` script generates 10 random employees using Faker library:
+
+```bash
+cd Backend
+python seed_data.py
+```
+
+Generates realistic data:
+- Random names, emails, addresses
+- Random phone numbers
+- Salaries between $40k-$90k
+
+Useful for testing and demonstration.
+
+## Local Development Workflow
+
+1. **Start MongoDB Atlas** - Ensure cluster is running
+2. **Start Backend:**
    ```bash
-   pip install -r requirements.txt
-   ```
-3. Create a `.env` file with database credentials:
-   ```
-   MYSQL_DATABASE_USER=your_username
-   MYSQL_DATABASE_PASSWORD=your_password
-   MYSQL_DATABASE_DB=your_database_name
-   MYSQL_DATABASE_HOST=localhost
-   ```
-4. Ensure MySQL server is running and the database exists
-5. Start the Flask server:
-   ```bash
+   cd Backend
    python main.py
    ```
-
-### Frontend Setup
-1. Navigate to the root directory
-2. Install Node.js dependencies:
+3. **Start Frontend (new terminal):**
    ```bash
-   npm install
+   npm start
    ```
-3. Start the Angular development server:
-   ```bash
-   ng serve
-   ```
-4. Access the application at `http://localhost:4200`
+4. **Access Application:** `http://localhost:4200`
 
-## Database Schema
+### API Testing
 
-The application uses a simple `employee` table:
+Use curl or Postman:
 
-```sql
-CREATE TABLE employee (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    phone VARCHAR(20),
-    address TEXT,
-    salary DECIMAL(10, 2)
-);
+```bash
+# Get all employees
+curl http://localhost:5000/employee
+
+# Create employee
+curl -X POST http://localhost:5000/employee/create \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Jane Doe","email":"jane@example.com","phone":"9876543210","address":"456 Oak Ave","salary":65000}'
 ```
 
-## API Documentation
+## Troubleshooting
 
-### Employee Management Endpoints
-- GET `/employee` - Get all employees
-- GET `/employee/{id}` - Get employee by ID
-- POST `/employee/create` - Create new employee
-- PUT `/employee/update` - Update employee
-- DELETE `/employee/delete/{id}` - Delete employee
+### Common Issues
 
-## Authentication Implementation Status
+**MongoDB Connection Failed:**
+- Verify MongoDB Atlas IP whitelist
+- Check connection string in .env
+- Ensure database user has correct password
 
-The project includes a partially implemented authentication system, primarily on the frontend, but it is not fully functional.
+**API 400 Errors:**
+- Check validation constraints in create form
+- Verify email format is valid
+- Ensure salary is within $0-$10,000,000 range
 
-### What is Implemented:
-- **Frontend Components**: Login and register forms with basic UI.
-- **AuthService**: Handles login, logout, token storage, and refresh logic.
-- **AuthGuard**: Route protection mechanism with role-based access.
-- **AuthInterceptor**: Adds JWT tokens to HTTP requests.
+**CORS Errors:**
+- Ensure backend is running
+- Verify CORS enabled in Flask app
+- Check API URL in data.service.ts
 
-### What is Incomplete:
-- **Backend Endpoints**: No server-side authentication routes (e.g., /auth/login, /auth/register).
-- **Route Protection**: Guards are not applied to main routes like /home and /create.
-- **API Configuration**: Empty base URL in AuthService, causing requests to fail.
-- **Navigation Issues**: Login redirects to non-existent routes (/reader, /owner).
+**Build Errors:**
+- Delete node_modules and reinstall
+- Clear Python cache and recreate venv
+- Check Node.js and Python versions
 
-### Is it Actually Required?
-Authentication is not essential for the core functionality of managing employee data, as the app can operate without user accounts. However, it can be implemented for learning purposes or future enhancements.
 
-## Development Best Practices Demonstrated
 
-1. **Modular Code Structure**: Clear separation of concerns
-2. **Error Handling**: Proper exception handling in both frontend and backend
-3. **Security**: Input validation
-4. **Performance**: Efficient database queries and frontend rendering
-5. **Maintainability**: Well-organized code with meaningful naming
-6. **Scalability**: Service-based architecture for easy extension
+## Key Takeaways
 
-## Potential Enhancements
+This project demonstrates:
+- ✅ Modern full-stack architecture
+- ✅ MongoDB for cloud-native applications
+- ✅ RESTful API design
+- ✅ Form validation strategies
+- ✅ Security best practices
+- ✅ Professional deployment patterns
+- ✅ Data export functionality
+- ✅ Error handling and UX
 
-- Add unit and integration tests
-- Complete authentication system implementation
-- Add data validation and sanitization
-- Implement caching for better performance
-- Add logging and monitoring
-- Create API documentation with Swagger/OpenAPI
-- Implement pagination for large datasets
-- Add search functionality
-- Support for file uploads (e.g., employee photos)
+## Resources
 
-## Learning Resources
+- **Angular**: [https://angular.io](https://angular.io)
+- **Flask**: [https://flask.palletsprojects.com](https://flask.palletsprojects.com)
+- **MongoDB**: [https://docs.mongodb.com](https://docs.mongodb.com)
+- **Vercel**: [https://vercel.com/docs](https://vercel.com/docs)
+- **Render**: [https://render.com/docs](https://render.com/docs)
+- **AG-Grid**: [https://www.ag-grid.com/documentation/](https://www.ag-grid.com/documentation/)
 
-- [Angular Documentation](https://angular.io/docs)
-- [Flask Documentation](https://flask.palletsprojects.com/)
-- [AG-Grid Documentation](https://www.ag-grid.com/)
-- [MySQL Documentation](https://dev.mysql.com/doc/)
+## Summary
 
-This project provides a solid foundation for understanding modern web development practices and can be extended to build more complex applications.
+SmartGrid provides a solid foundation for building full-stack applications with modern technologies. The project emphasizes clean architecture, security, and best practices that scale from development to production.
+
+Start with the [README.md](README.md) for setup instructions, and refer to individual component files for implementation details.
+
+Happy coding! 🚀

@@ -1,124 +1,171 @@
-import pymysql
 from app import app
-from config import mysql
-from flask import jsonify
-from flask import request
+from config import employees_collection
+from flask import jsonify, request
+from bson import ObjectId
+from json_encoder import serialize_document, serialize_documents
+from validators import EmployeeValidator, ValidationError
 
 @app.route('/employee/create', methods=['POST'])
 def create_employee():
-    try:        
+    try:
         _json = request.json
-        print(_json)
-        _name = _json['name']
-        _email = _json['email']
-        _phone = _json['phone']
-        _address = _json['address']	
-        _salary = _json['salary']	
 
-        if _name and _email and _phone and _address and _salary and request.method == 'POST':
-            conn = mysql.connect()
-            cursor = conn.cursor(pymysql.cursors.DictCursor)		
-            sqlQuery = "INSERT INTO employee(name, email, phone, address, salary) VALUES(%s, %s, %s, %s, %s)"
-            bindData = (_name, _email, _phone, _address, _salary)            
-            cursor.execute(sqlQuery, bindData)
-            conn.commit()
-            cursor.close() 
-            response = jsonify('Employee created successfully!')
-            response.status_code = 200
+        if not _json:
+            response = jsonify({'error': 'Request body must be valid JSON'})
+            response.status_code = 400
             return response
-        else:
-            return showMessage()
+
+        # Validate all input data
+        try:
+            validated_data = EmployeeValidator.validate_employee_data(_json)
+        except ValidationError as ve:
+            response = jsonify({'error': str(ve)})
+            response.status_code = 400
+            return response
+
+        # Check if email already exists (case-insensitive)
+        existing_employee = employees_collection.find_one({'email': validated_data['email']})
+        if existing_employee:
+            response = jsonify({'error': 'Email already exists!'})
+            response.status_code = 409
+            return response
+
+        # Insert new employee document
+        result = employees_collection.insert_one(validated_data)
+
+        response = jsonify('Employee created successfully!')
+        response.status_code = 200
+        return response
+
     except Exception as err:
-        print(err)
-    finally:
-        conn.close()          
-    
+        # Log error securely without exposing sensitive data
+        app.logger.error(f"Error creating employee: {type(err).__name__}")
+        response = jsonify({'error': 'An error occurred while creating the employee'})
+        response.status_code = 500
+        return response
+
 @app.route('/employee')
 def employee():
     try:
-        conn = mysql.connect()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("SELECT id, name, email, phone, address, salary FROM employee")
-        empRows = cursor.fetchall()
+        # Fetch all employees from MongoDB
+        empRows = list(employees_collection.find())
+        # Serialize documents (convert ObjectId to string)
+        empRows = serialize_documents(empRows)
         response = jsonify(empRows)
         response.status_code = 200
         return response
     except Exception as err:
-        print(err)
-    finally:
-        cursor.close() 
-        conn.close()  
+        app.logger.error(f"Error fetching employees: {type(err).__name__}")
+        response = jsonify({'error': 'An error occurred while fetching employees'})
+        response.status_code = 500
+        return response
 
-@app.route('/employee/<int:employee_id>')
+@app.route('/employee/<employee_id>')
 def employee_details(employee_id):
     try:
-        conn = mysql.connect()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("SELECT id, name, email, phone, address, salary FROM employee WHERE id =%s", employee_id)
-        empRow = cursor.fetchone()
+        # Validate if employee_id is a valid ObjectId
+        if not ObjectId.is_valid(employee_id):
+            return showMessage()
+
+        # Find employee by _id
+        empRow = employees_collection.find_one({'_id': ObjectId(employee_id)})
+        if empRow is None:
+            return showMessage()
+
+        # Serialize the document
+        empRow = serialize_document(empRow)
         response = jsonify(empRow)
         response.status_code = 200
         return response
     except Exception as err:
-        print(err)
-    finally:
-        cursor.close() 
-        conn.close() 
+        app.logger.error(f"Error fetching employee details: {type(err).__name__}")
+        response = jsonify({'error': 'An error occurred while fetching employee details'})
+        response.status_code = 500
+        return response
 
 @app.route('/employee/update', methods=['PUT'])
 def update_employee():
     try:
         _json = request.json
-        print(_json)
-        _id = _json['id']
-        _name = _json['name']
-        _email = _json['email']
-        _phone = _json['phone']
-        _address = _json['address']
-        _salary = _json['salary']
-        if _name and _email and _phone and _address and _id and request.method == 'PUT':			
-            sqlQuery = "UPDATE employee SET name=%s, email=%s, phone=%s, address=%s, salary=%s WHERE id=%s"
-            bindData = (_name, _email, _phone, _address, _salary, _id,)
-            conn = mysql.connect()
-            cursor = conn.cursor()
-            cursor.execute(sqlQuery, bindData)
-            conn.commit()
-            response = jsonify('Employee updated successfully!')
-            response.status_code = 200
-            return response
-        else:
-            return showMessage()
-    except Exception as err:
-        print(err)
-    finally:
-        cursor.close() 
-        conn.close() 
 
-@app.route('/employee/delete/<int:employee_id>', methods=['DELETE'])
+        if not _json:
+            response = jsonify({'error': 'Request body must be valid JSON'})
+            response.status_code = 400
+            return response
+
+        # Validate update data
+        try:
+            employee_id, validated_data = EmployeeValidator.validate_update_data(_json)
+        except ValidationError as ve:
+            response = jsonify({'error': str(ve)})
+            response.status_code = 400
+            return response
+
+        # Validate if _id is a valid ObjectId
+        if not ObjectId.is_valid(employee_id):
+            return showMessage()
+
+        # Check if email is already used by another employee
+        existing_employee = employees_collection.find_one({
+            'email': validated_data['email'],
+            '_id': {'$ne': ObjectId(employee_id)}
+        })
+        if existing_employee:
+            response = jsonify({'error': 'Email already exists!'})
+            response.status_code = 409
+            return response
+
+        # Update the employee document
+        result = employees_collection.update_one(
+            {'_id': ObjectId(employee_id)},
+            {'$set': validated_data}
+        )
+
+        if result.matched_count == 0:
+            return showMessage()
+
+        response = jsonify('Employee updated successfully!')
+        response.status_code = 200
+        return response
+
+    except Exception as err:
+        app.logger.error(f"Error updating employee: {type(err).__name__}")
+        response = jsonify({'error': 'An error occurred while updating the employee'})
+        response.status_code = 500
+        return response
+
+@app.route('/employee/delete/<employee_id>', methods=['DELETE'])
 def delete_employee(employee_id):
     try:
-        conn = mysql.connect()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM employee WHERE id =%s", (employee_id,))
-        conn.commit()
+        # Validate if employee_id is a valid ObjectId
+        if not ObjectId.is_valid(employee_id):
+            return showMessage()
+
+        # Delete the employee document
+        result = employees_collection.delete_one({'_id': ObjectId(employee_id)})
+
+        if result.deleted_count == 0:
+            return showMessage()
+
         response = jsonify('Employee deleted successfully!')
         response.status_code = 200
         return response
+
     except Exception as err:
-        print(err)
-    finally:
-        cursor.close() 
-        conn.close()
-        
+        app.logger.error(f"Error deleting employee: {type(err).__name__}")
+        response = jsonify({'error': 'An error occurred while deleting the employee'})
+        response.status_code = 500
+        return response
+
 @app.errorhandler(404)
 def showMessage(error=None):
     message = {
         'status': 404,
-        'message': 'Record not found: ' + request.url,
+        'message': 'Record not found',
     }
     response = jsonify(message)
     response.status_code = 404
     return response
-        
+
 if __name__ == "__main__":
     app.run()
